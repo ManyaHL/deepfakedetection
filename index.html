@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>True Vision - DeepFake Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Poppins',sans-serif;}
+body{background:#f8f9fc;color:#222;overflow-x:hidden;}
+header{background:#1c1f26;color:white;padding:18px 40px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1000;box-shadow:0 3px 12px rgba(0,0,0,0.1);}
+header h1{font-size:22px;font-weight:600;letter-spacing:0.5px;}
+nav{position:relative;}
+nav a{color:white;text-decoration:none;margin:0 4px;font-weight:300;font-size:14px; padding:2px 4px;border-radius:4px;transition:all 0.25s ease;position:relative;cursor:pointer;}
+
+nav a:hover{background:#ffb74d;color:#1c1f26;}
+nav a.active{background:#ffb74d;color:#1c1f26;font-weight:600;}
+.logout-box{position:absolute;top:38px;right:0;background:white;border:1px solid #ccc;border-radius:6px;box-shadow:0 4px 10px rgba(0,0,0,0.1);display:none;z-index:2000;padding:8px;width:100px;text-align:center;}
+.logout-box button{background:red;color:white;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;width:100%;}
+.logout-box button:hover{background:darkred;}
+
+.page{display:none;animation:fadeIn 0.6s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.container{max-width:1000px;margin:60px auto;padding:0 20px;text-align:center;}
+.hero{padding:80px 20px;background:linear-gradient(135deg,#1c1f26,#2b3038);color:white;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,0.15);}
+.hero h2{font-size:32px;margin-bottom:12px;}
+.hero p{color:#ddd;font-size:17px;}
+.cta-btn{display:inline-block;background:#ffb74d;color:black;padding:14px 28px;margin-top:22px;border-radius:8px;font-weight:600;transition:transform 0.25s,box-shadow 0.25s;}
+.cta-btn:hover{transform:scale(1.05);box-shadow:0 6px 20px rgba(0,0,0,0.2);}
+.features{display:flex;justify-content:space-around;flex-wrap:wrap;margin-top:60px;gap:24px;}
+.feature-card{flex:1 1 280px;background:white;border-radius:12px;padding:26px;box-shadow:0 6px 18px rgba(0,0,0,0.08);transition:transform 0.25s,box-shadow 0.25s;}
+.feature-card:hover{transform:translateY(-6px);box-shadow:0 10px 24px rgba(0,0,0,0.15);}
+footer{text-align:center;padding:20px;color:#666;font-size:14px;}
+input[type="file"],input[type="text"],input[type="password"],input[type="email"]{
+  padding:10px;border:1px solid #ccc;border-radius:6px;width:100%;margin-top:8px;
+}
+input[type="submit"],button{
+  background:#ffb74d;border:none;color:black;font-weight:600;padding:10px 20px;
+  border-radius:6px;margin-top:12px;cursor:pointer;transition:background 0.3s;
+}
+input[type="submit"]:hover,button:hover{background:#ffcb7d;}
+
+/* Centered Login Page */
+#loginPage{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e9edf3,#f9fafc);}
+#loginBox{background:white;padding:35px 30px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);width:360px;max-width:90%;text-align:center;}
+#loginBox h2{margin-bottom:20px;}
+#loginBox.shake{animation:shake 0.3s;}
+@keyframes shake {
+  0%,100% {transform:translateX(0);}
+  25% {transform:translateX(-10px);}
+  50% {transform:translateX(10px);}
+  75% {transform:translateX(-6px);}
+}
+
+.info-box-container{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:18px;}
+.info-box{background:white;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.08);padding:12px 20px;min-width:160px;}
+#result,#videoResult{margin-top:30px;padding:20px;background:white;border-radius:12px;box-shadow:0 8px 22px rgba(0,0,0,0.1);}
+.progress-container{width:80%;max-width:400px;height:14px;background:#eee;border-radius:8px;margin:20px auto;overflow:hidden;display:none;}
+.progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#ffb74d,#ff9800);transition:width 0.2s ease;}
+#analyzingText{margin-top:12px;font-weight:500;color:#444;display:none;}
+.frame-grid{display:grid;grid-template-columns:repeat(4, 1fr);gap:16px;margin-top:25px;justify-items:center;}
+/* Larger video frame thumbnails */
+.frame-box {
+  width: 220px;                 /* increased width */
+  padding: 12px;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.frame-box img {
+  width: 200px;                 /* larger image size */
+  height: 120px;                /* proportionally taller */
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.frame-box:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+}
+
+@media(max-width:700px){
+  .features{flex-direction:column;align-items:center;}
+  header{flex-direction:column;text-align:center;}
+  header h1{margin-bottom:10px;}
+  #loginBox{width:90%;padding:25px;}
+}
+
+</style>
+</head>
+<body>
+
+<header>
+  <h1>True Vision</h1>
+  <nav>
+    <a id="navHome" onclick="navigate('mainPage')">Home</a>
+    <a id="navAbout" onclick="navigate('aboutPage')">About</a>
+    <a id="navDetect" onclick="navigate('detectPage')">Image Detect</a>
+    <a id="navLogout" onmouseenter="showLogoutBox()" onmouseleave="hideLogoutBox()">Logout</a>
+    <div class="logout-box" id="logoutBox" onmouseenter="keepLogoutBox()" onmouseleave="hideLogoutBox()">
+      <button onclick="logoutConfirm()">Logout</button>
+    </div>
+  </nav>
+</header>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="page">
+  <div id="loginBox">
+    <h2>Login</h2>
+    <form id="loginForm">
+      <input type="text" id="username" placeholder="Username" required><br>
+      <input type="email" id="email" placeholder="Email" required><br>
+      <input type="password" id="password" placeholder="Password" required><br>
+      <input type="submit" value="Login">
+    </form>
+  </div>
+</div>
+
+<div id="registerPage" class="page">
+  <div id="loginBox">
+    <h2>Sign Up</h2>
+    <form id="registerForm">
+      <input type="text" id="register_username" placeholder="Username" required><br>
+      <input type="email" id="register_email" placeholder="Email" required><br>
+      <input type="password" id="register_password" placeholder="Password" required><br>
+      <input type="submit" value="Create Account">
+    </form>
+    <p style="margin-top:15px;font-size:14px;">
+      Already have an account? <a href="#" onclick="showPage('loginPage')">Login</a>
+    </p>
+  </div>
+</div>
+
+<!-- MAIN PAGE -->
+<div id="mainPage" class="page">
+  <div class="container">
+    <div class="hero">
+      <h2>DeepFake Detection Powered by AI</h2>
+      <p>Detect fake images and videos instantly with cutting-edge AI technology.</p>
+      <div class="cta-btn" onclick="startDetection()">Start Detection</div>
+    </div>
+
+    <div class="features">
+      <div class="feature-card"><h3>High Accuracy</h3><p>AI models trained on thousands of samples.</p></div>
+      <div class="feature-card"><h3>Real-Time Results</h3><p>Instant predictions for both images and videos.</p></div>
+      <div class="feature-card"><h3>Secure Analysis</h3><p>All uploads processed safely.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT PAGE -->
+<div id="aboutPage" class="page container">
+  <h2>About Deepfake Detection</h2>
+  <p style="margin-top:20px;font-size:16px;line-height:1.6;">
+  Deepfake detection is the process of using technology to identify manipulated or synthetically generated media, 
+  such as videos, audio, and images. It analyzes content for inconsistencies that are often imperceptible to humans, 
+  using AI, computer vision, and signal processing to detect artifacts of AI generation — such as unnatural facial 
+  movements, lighting mismatches, or temporal inconsistencies. The goal is to prevent the spread of misinformation, 
+  protect against fraud, and verify the authenticity of digital media.
+</p>
+
+<h3 style="margin-top:25px;">How Deepfake Detection Works</h3>
+
+<p style="font-size:16px;line-height:1.6;">
+  <b>1. Analyzing visual and audio inconsistencies:</b><br>
+  Algorithms examine a variety of visual and auditory cues, including facial warping, inconsistent blinking patterns, 
+  and unnatural lip movements.<br><br>
+
+  <b>2. Detecting temporal and behavioral anomalies:</b><br>
+  <b>• Temporal:</b> Detects inconsistencies that occur over time, such as jerky movements or mismatches between speech 
+  and lip motion in videos.<br>
+  <b>• Behavioral:</b> Identifies unnatural human behavior, like excessive or infrequent blinking, which is a common 
+  characteristic of deepfakes.<br><br>
+
+  <b>3. Identifying physical and geometric inconsistencies:</b><br>
+  Detection systems analyze scenes for physical inaccuracies — such as misaligned shadows or perspective errors — 
+  where parallel lines fail to meet at a vanishing point, revealing possible manipulation.<br><br>
+
+  <b>4. Using signal processing:</b><br>
+  In audio deepfake detection, algorithms analyze sound waveforms to identify distortions or anomalies that are 
+  typically absent in authentic recordings.<br><br>
+
+  <b>5. Leveraging machine learning:</b><br>
+  Deep learning models are trained on large datasets to recognize distinguishing patterns in both real and fake media. 
+  Some systems use autoencoders trained on genuine data to reconstruct it accurately, which exposes discrepancies 
+  when processing deepfakes.<br>
+</p>
+
+<h3 style="margin-top:25px;">Why Deepfake Detection Is Important</h3>
+
+<p style="font-size:16px;line-height:1.6;">
+  <b>• Combating misinformation:</b><br>
+  Helps identify and flag manipulated media to prevent the spread of fake news, propaganda, and disinformation.<br><br>
+
+  <b>• Preventing fraud:</b><br>
+  Plays a vital role in cybersecurity by detecting identity theft, phishing schemes, and other forms of fraud that 
+  rely on synthetic media.<br><br>
+
+  <b>• Protecting individuals:</b><br>
+  Safeguards people’s reputation and privacy by preventing the misuse of their likeness or voice in malicious deepfakes.<br><br>
+
+  <b>• Securing intellectual property:</b><br>
+  Enables the entertainment industry and digital creators to protect against unauthorized use of celebrity likenesses 
+  and copyrighted content in manipulated media.
+</p>
+
+
+</div>
+
+<!-- IMAGE DETECT PAGE -->
+<div id="detectPage" class="page container">
+  <h2>Detect Deepfake Image</h2>
+  <p>Upload an image for AI-powered authenticity analysis.</p>
+  <input type="file" id="imageInput" accept="image/*"><br><br>
+  <img id="previewImage" style="display:none;max-width:300px;border:1px solid #ccc;padding:10px;margin:20px auto;border-radius:10px;">
+  <br>
+  <button onclick="analyzeImage()">Analyze Image</button>
+
+  <div id="result" style="display:none;">
+    <div class="info-box-container">
+      <div class="info-box"><b>PROCESSING TIME:</b> <span id="processingTime">0.0</span> sec</div>
+      <div class="info-box"><b>MODEL CONFIDENCE:</b> <span id="modelConfidence">0.0</span>%</div>
+    </div>
+    <h3 id="resultText" style="margin-top:18px;"></h3>
+  </div>
+</div>
+
+
+
+<script>
+let loggedIn=false;
+
+window.onload=()=>showPage('mainPage');
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.style.display='none');
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
+  const page=document.getElementById(id);
+  page.style.display=id==='loginPage'?'flex':'block';
+  if(id==='mainPage')document.getElementById('navHome').classList.add('active');
+  if(id==='aboutPage')document.getElementById('navAbout').classList.add('active');
+  if(id==='detectPage')document.getElementById('navDetect').classList.add('active');
+  if(id==='videoDetectPage')document.getElementById('navVideo').classList.add('active');
+}
+
+function navigate(id){
+  if(!loggedIn&&id!=='mainPage'){showLoginWithShake();return;}
+  showPage(id);
+}
+
+function showLoginWithShake(){
+  showPage('loginPage');
+  const box=document.getElementById('loginBox');
+  box.classList.remove('shake');
+  void box.offsetWidth;
+  box.classList.add('shake');
+}
+
+document.getElementById('loginForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  loggedIn=true;
+  showPage('mainPage');
+});
+
+function logoutConfirm(){
+  loggedIn=false;
+  hideLogoutBox();
+  showPage('mainPage');
+}
+
+function startDetection(){
+  if(!loggedIn){showLoginWithShake();}else{showPage('detectPage');}
+}
+
+/* --- Fixed Logout Box (click-to-open and logout correctly) --- */
+const logoutLink = document.getElementById('navLogout');
+const logoutBox = document.getElementById('logoutBox');
+
+logoutLink.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  logoutBox.style.display = logoutBox.style.display === 'block' ? 'none' : 'block';
+});
+
+// Close the box when clicking outside
+document.addEventListener('click', (e)=>{
+  if (logoutBox.style.display === 'block' && !logoutBox.contains(e.target) && e.target !== logoutLink) {
+    logoutBox.style.display = 'none';
+  }
+});
+
+// ✅ Logout function — logs out and returns to home
+function logoutConfirm(){
+  loggedIn = false;
+  logoutBox.style.display = 'none';
+  showPage('mainPage');
+}
+
+
+/* IMAGE DETECT */
+document.getElementById('imageInput').addEventListener('change',e=>{
+  const file=e.target.files[0];
+  if(file){
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=document.getElementById('previewImage');
+      img.src=ev.target.result;
+      img.style.display='block';
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+/* IMAGE DETECT */
+document.getElementById('imageInput').addEventListener('change',e=>{
+  const file=e.target.files[0];
+  if(file){
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=document.getElementById('previewImage');
+      img.src=ev.target.result;
+      img.style.display='block';
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+// ✅ --- NEW, CONNECTED analyzeImage FUNCTION --- ✅
+async function analyzeImage() {
+  const input = document.getElementById('imageInput');
+  const file = input.files[0];
+  if (!file) {
+    alert("Please select an image file first.");
+    return;
+  }
+
+  const resultDiv = document.getElementById('result');
+  const resultText = document.getElementById('resultText');
+  const modelConfidence = document.getElementById('modelConfidence');
+  const processingTime = document.getElementById('processingTime');
+  
+  // Show a "loading" state
+  resultDiv.style.display = 'block';
+  resultText.innerHTML = "Analyzing... Please wait.";
+  modelConfidence.innerText = "---";
+  processingTime.innerText = "---";
+
+  // Create FormData to send the file
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    // Send the file to your Python (Flask) server
+    const response = await fetch('http://127.0.0.1:5000/analyze-image', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.statusText}`);
+    }
+
+    // Get the JSON results from the server
+    const results = await response.json();
+
+    // Display the REAL results
+    const isAI = results.classification === 'AI-Generated';
+    const color = isAI ? 'red' : 'green';
+    
+    resultText.innerHTML = `Result: <b style="color:${color};">${results.classification}</b>`;
+    modelConfidence.innerText = results.aiConfidence; // Show AI confidence
+    processingTime.innerText = results.processingTime;
+
+  } catch (error) {
+    console.error('Error analyzing image:', error);
+    resultText.innerHTML = `<b style="color:red;">Analysis Failed:</b> ${error.message}. Is the server running?`;
+  }
+}
+
+
+</script>
+</body>
+</html>
